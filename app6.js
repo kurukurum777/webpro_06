@@ -37,32 +37,56 @@ app.get("/omikuji2", (req, res) => {
   res.render( 'omikuji2', {result:luck} );
 });
 
+
 app.get("/janken", (req, res) => {
+  // --- 1. 変数の初期化と取得 ---
   let hand = req.query.hand;
   let win = Number( req.query.win );
+  let lose = Number( req.query.lose );   // 負け数を取得
+  let even = Number( req.query.even );   // あいこ数を取得 (HTML側のhidden fieldsに追加が必要です)
   let total = Number( req.query.total );
-  console.log( {hand, win, total});
+
+  console.log( {hand, win, lose, even, total} );
+  
+  // --- 2. CPUの手を決定 ---
   const num = Math.floor( Math.random() * 3 + 1 );
   let cpu = '';
-  let judgement = '';
-  if( num==1 ) cpu = 'グー';
-  else if( num==2 ) cpu = 'チョキ';
+  if( num === 1 ) cpu = 'グー';
+  else if( num === 2 ) cpu = 'チョキ';
   else cpu = 'パー';
-  // ここに勝敗の判定を入れる
-  // 以下の数行は人間の勝ちの場合の処理なので，
-  // 判定に沿ってあいこと負けの処理を追加する
-  judgement = '勝ち';
-  win += 1;
-  total += 1;
+
+  // --- 3. 勝敗の判定と集計ロジックの適用 ---
+  const judgement = jankenJudge(hand, cpu); // 定義した関数をここで呼び出す！
+
+  if (judgement === '勝ち') {
+    win += 1;
+  } else if (judgement === '負け') {
+    lose += 1;
+  } else if (judgement === 'あいこ') {
+    even += 1;
+  }
+  
+  total += 1; // 試合数を増やす
+
+  // --- 4. テンプレートに渡すデータ (display) ---
   const display = {
     your: hand,
     cpu: cpu,
-    judgement: judgement,
+    judgement: judgement, // 勝ち, 負け, あいこのいずれかの文字列が入る
     win: win,
+    lose: lose,
+    even: even, // 渡す変数を追加
     total: total
   }
+  
   res.render( 'janken', display );
 });
+  // ここに勝敗の判定を入れる
+  // 以下の数行は人間の勝ちの場合の処理なので，
+  // 判定に沿ってあいこと負けの処理を追加する
+
+  
+
 
 app.get("/get_test", (req, res) => {
   res.json({
@@ -79,6 +103,25 @@ app.get("/add", (req, res) => {
   console.log( num2 );
   res.json( {answer: num1+num2} );
 });
+
+// --- app.get(...) の外側に定義する ---
+function jankenJudge(myHand, opponentHand) {
+    // 1. あいこの判定
+    if (myHand === opponentHand) {
+        return 'あいこ';
+    } 
+    // 2. 負けの判定 (相手が勝つパターン)
+    if (
+        (myHand === 'パー' && opponentHand === 'チョキ') ||
+        (myHand === 'グー' && opponentHand === 'パー') ||
+        (myHand === 'チョキ' && opponentHand === 'グー')
+    ) {
+        return '負け';
+    } 
+    // 3. 勝ちの判定 (残りのパターン)
+    return '勝ち';
+}
+// ----------------------------------------
 
 app.post("/add", (req, res) => {
   console.log("POST");
