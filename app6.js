@@ -37,16 +37,34 @@ app.get("/omikuji2", (req, res) => {
   res.render( 'omikuji2', {result:luck} );
 });
 
-
+  
 app.get("/janken", (req, res) => {
-  // --- 1. 変数の初期化と取得 ---
   let hand = req.query.hand;
-  let win = Number( req.query.win );
-  let lose = Number( req.query.lose );   // 負け数を取得
-  let even = Number( req.query.even );   // あいこ数を取得 (HTML側のhidden fieldsに追加が必要です)
-  let total = Number( req.query.total );
+  let win = Number( req.query.win ) || 0;
+  let total = Number( req.query.total ) || 0;
+  console.log( {hand, win, total});
 
-  console.log( {hand, win, lose, even, total} );
+
+
+  // 初回アクセス（手が未入力）の場合の処理
+  if (!hand) {
+      // 統計情報（全て0）のみを渡してレンダリングし、処理を終了
+      return res.render('janken', {
+          your: '?',
+          cpu: '?',
+          judgement: '手を決めてください',
+          win, lose, even, total
+      });
+  }
+
+  // // --- 1. 変数の初期化と取得 ---
+  // let hand = req.query.hand;
+  // let win = Number( req.query.win );
+  // let lose = Number( req.query.lose );   // 負け数を取得
+  // let even = Number( req.query.even );   // あいこ数を取得 (HTML側のhidden fieldsに追加が必要です)
+  // let total = Number( req.query.total );
+
+  // console.log( {hand, win, lose, even, total} );
   
   // --- 2. CPUの手を決定 ---
   const num = Math.floor( Math.random() * 3 + 1 );
@@ -78,7 +96,8 @@ app.get("/janken", (req, res) => {
     even: even, // 渡す変数を追加
     total: total
   }
-  
+  // 💡 ADDED: 更新した統計をセッションに保存
+  req.session.results = { win, lose, even, total }; // 👈 この行を追加する！
   res.render( 'janken', display );
 });
   // ここに勝敗の判定を入れる
